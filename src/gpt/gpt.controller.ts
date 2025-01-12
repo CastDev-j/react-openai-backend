@@ -1,9 +1,27 @@
-import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  FileTypeValidator,
+  Get,
+  HttpStatus,
+  MaxFileSizeValidator,
+  Param,
+  ParseFilePipe,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { GptService } from '@gpt/gpt.service';
 import { OrthographyDto } from '@gpt/dtos/orthography.dto';
 import { ProConDiscusserDto } from './dtos/proscons.dto';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { TranslatorDto } from './dtos/translator.dto';
+import { TextToAudioDto } from './dtos/text-to-audio.dto';
+import * as path from 'path';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { AudioToTextDto } from './dtos/AudioToTextDto';
 
 @Controller('gpt')
 export class GptController {
@@ -52,5 +70,64 @@ export class GptController {
     }
 
     res.end();
+  }
+
+  @Post('text-to-audio')
+  async textToAudio(
+    @Body() textToAudioDto: TextToAudioDto,
+    @Res() res: Response,
+  ) {
+    const filePath = await this.gptService.textToAudio(textToAudioDto);
+    res.setHeader('Content-Type', 'audio/mp3');
+    res.status(HttpStatus.OK);
+    res.sendFile(filePath);
+  }
+
+  @Get('text-to-audio/:fileId')
+  async textToAudioWithId(
+    @Param('fileId') fileId: string,
+    @Res() res: Response,
+  ) {
+    const filePath = await this.gptService.textToAudioGetter(fileId);
+
+    res.setHeader('Content-Type', 'audio/mp3');
+    res.status(HttpStatus.OK);
+    res.sendFile(filePath);
+  }
+
+  @Post('audio-to-text')
+  @UseInterceptors(
+    FileInterceptor('audio', {
+      storage: diskStorage({
+        destination: './generated/uploads',
+        filename: (req, file, cb) => {
+          const fileExtention = file.originalname.split('.').pop();
+          const fileName = `${new Date().getTime()}.${fileExtention}`;
+          return cb(null, fileName);
+        },
+      }),
+    }),
+  )
+  async audioToText(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024 * 3,
+            message: 'File too large',
+          }),
+          new FileTypeValidator({
+            fileType: 'audio/*',
+          }),
+        ],
+      }),
+    )
+    audio: Express.Multer.File,
+    @Body()
+    audioToTextDto: AudioToTextDto,
+  ) {
+    console.log(audio, audioToTextDto);
+
+    return await this.gptService.audioToText(audio, audioToTextDto);
   }
 }
