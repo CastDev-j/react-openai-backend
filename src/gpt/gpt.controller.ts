@@ -22,6 +22,8 @@ import * as path from 'path';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { AudioToTextDto } from './dtos/AudioToTextDto';
+import { ImageGenerationDto } from './dtos/ImageGenerationDto';
+import { imageVariationDto } from './dtos/imageVariationDto';
 
 @Controller('gpt')
 export class GptController {
@@ -126,8 +128,38 @@ export class GptController {
     @Body()
     audioToTextDto: AudioToTextDto,
   ) {
-    console.log(audio, audioToTextDto);
 
     return await this.gptService.audioToText(audio, audioToTextDto);
+  }
+
+  @Post('image-generation')
+  async imageGeneration(
+    @Body() imageGenerationDto: ImageGenerationDto,
+  ) {
+
+    return await this.gptService.imageGeneration(imageGenerationDto);
+
+  }
+
+  @Get('image-generation/:imageInfo')
+  async imageGenerationGetter(
+    @Param('imageInfo') imageInfo: string,
+    @Res() res: Response,
+  ) {
+
+    const filePath = this.gptService.getGeneratedImage(imageInfo);
+
+    res.setHeader('Content-Type', 'image/png');
+    res.status(HttpStatus.OK);
+    res.sendFile(filePath);
+  }
+
+  @Post('image-variation')
+  async imageVariation(
+    @Body() imageVariationDto: imageVariationDto,
+  ) {
+
+    return await this.gptService.imageVariation(imageVariationDto);
+
   }
 }

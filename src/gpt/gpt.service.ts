@@ -13,6 +13,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { audioToTextUseCase } from './use-cases/audioToText.use-case';
 import { AudioToTextDto } from './dtos/AudioToTextDto';
+import { ImageGenerationDto } from './dtos/ImageGenerationDto';
+import { imageGenerationUseCase } from './use-cases/imageGenerationUseCase.use-case';
+import { imageVariationDto } from './dtos/imageVariationDto';
+import { imageVariationUseCase } from './use-cases/imageVariation.use-case';
 
 @Injectable()
 export class GptService {
@@ -62,5 +66,36 @@ export class GptService {
     const { prompt } = audioToTextDto;
 
     return await audioToTextUseCase(this.openai, { audio: audioDile, prompt });
+  }
+
+  async imageGeneration({
+    prompt,
+    originalImage,
+    maskImage,
+  }: ImageGenerationDto) {
+    return await imageGenerationUseCase(this.openai, {
+      prompt,
+      originalImage,
+      maskImage,
+    });
+  }
+
+  getGeneratedImage(imageInfo: string) {
+    const filePath = path.resolve(
+      __dirname,
+      `../../generated/images/${imageInfo}`,
+    );
+    
+
+    const exist = fs.existsSync(filePath);
+
+    if (!exist) throw new NotFoundException(`Image ${imageInfo} not found`);
+
+    return filePath;
+  }
+
+  async imageVariation({baseImage}: imageVariationDto){
+
+    return await imageVariationUseCase(this.openai, {baseImage});
   }
 }
