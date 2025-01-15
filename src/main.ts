@@ -13,13 +13,12 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors();
+  app.enableCors({
+    origin: 'https://react-gpt-castdev.netlify.app',
+  });
 
-  app.use( bodyParser.json({ limit: '10mb' }) );
-  app.use( bodyParser.urlencoded({ limit: '10mb' , extended: true}) );
-
-
-
+  app.use(bodyParser.json({ limit: '10mb' }));
+  app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
   await app.listen(process.env.PORT ?? 3000);
 }
